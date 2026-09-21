@@ -240,12 +240,13 @@
 }
 @media (max-width: 560px) { .login-card { padding: 22px 18px 18px; } }
 
-.login-brand { display: flex; align-items: center; }
+.login-brand { display: flex; align-items: center; justify-content: center; }
 .login-brand a { display: block; }
 .login-brand img { height: 34px; width: auto; }
 .login-tag {
   font-family: var(--script); font-size: 21px; line-height: 1.1;
   color: var(--gold-deep); margin: 9px 0 14px;
+  text-align: center;
 }
 .login-eyebrow { margin-bottom: 6px; }
 .login-main h1 { font-size: 24px; font-family: var(--serif); font-weight: 700; }
@@ -259,29 +260,46 @@
   border: 1px solid var(--rule);
   background: var(--panel);
   border-radius: var(--r-lg);
-  padding: 15px 16px;
-  display: flex; gap: 13px; align-items: flex-start;
+  padding: 16px 18px;
+  display: flex; gap: 14px; align-items: stretch;
   box-shadow: var(--lift-1);
   transition: transform .1s ease, box-shadow .14s ease, border-color .14s ease;
-  position: relative; overflow: hidden;
-}
-.role-btn::after {
-  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
-  background: var(--accent, var(--blue));
 }
 .role-btn:hover {
   transform: translateY(-2px); box-shadow: var(--lift-2);
   border-color: color-mix(in srgb, var(--accent, var(--blue)) 45%, var(--rule));
 }
+.role-btn:active { transform: translateY(0); box-shadow: var(--lift-1); }
+
 .role-btn .ico {
-  flex: none; width: 40px; height: 40px; border-radius: 10px;
+  flex: none; width: 42px; height: 42px; border-radius: 11px; margin-top: 1px;
   display: grid; place-items: center;
   background: color-mix(in srgb, var(--accent, var(--blue)) 12%, var(--panel));
+  border: 1px solid color-mix(in srgb, var(--accent, var(--blue)) 22%, transparent);
   color: var(--accent, var(--blue));
+  transition: background .14s ease;
 }
-.role-btn .rn { font-size: 15px; font-weight: 700; letter-spacing: -0.012em; }
-.role-btn .rd { font-size: 13px; color: var(--ink-2); margin-top: 4px; line-height: 1.45; }
-.role-btn .who { font-size: 12px; color: var(--ink-3); margin-top: 9px; }
+.role-btn:hover .ico { background: color-mix(in srgb, var(--accent, var(--blue)) 18%, var(--panel)); }
+
+/* Column body: title row with the chevron, then the description, then the
+   who-line anchored to the bottom — equal-height grid cells otherwise leave
+   that footnote floating with dead space under it. */
+.rb-body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.rb-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+/* Block display: these are spans, and inline layout ran the role name
+   straight into its description ("AdminFull visibility…"). */
+.role-btn .rn { display: block; font-size: 15px; font-weight: 700; letter-spacing: -0.012em; }
+.rb-arrow {
+  flex: none; display: inline-flex; color: var(--ink-3); opacity: .45;
+  transition: transform .14s ease, color .14s ease, opacity .14s ease;
+}
+.rb-arrow svg { width: 15px; height: 15px; }
+.role-btn:hover .rb-arrow { color: var(--accent, var(--blue)); opacity: 1; transform: translateX(3px); }
+.role-btn .rd { display: block; font-size: 13px; color: var(--ink-2); margin-top: 5px; margin-bottom: 14px; line-height: 1.5; }
+.role-btn .who {
+  display: block; font-size: 12px; color: var(--ink-3);
+  margin-top: auto; padding-top: 10px; border-top: 1px solid var(--rule);
+}
 
 .login-points {
   list-style: none; margin: 22px 0 0; padding: 16px 0 0;

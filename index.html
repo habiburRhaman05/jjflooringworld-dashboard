@@ -86,8 +86,12 @@
       }
     }, [
       el('span', { class: 'ico' }, [icon(r.icon)]),
-      el('span', {}, [
-        el('span', { class: 'rn', text: r.label || r.key }),
+      el('span', { class: 'rb-body' }, [
+        el('span', { class: 'rb-head' }, [
+          el('span', { class: 'rn', text: r.label || r.key }),
+          el('span', { class: 'rb-arrow', html:
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>' })
+        ]),
         el('span', { class: 'rd', text: r.blurb }),
         el('span', { class: 'who', text: people.length
             ? 'Signs in as ' + people[0].name + (people.length > 1 ? ' (switch reps from the top bar)' : '')
