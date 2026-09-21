@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>seed</title></head>
+<body>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  var role = q.get('role') || 'Admin';
+  var user = q.get('user') || '';
+  var to = q.get('to') || 'admin.html';
+  try {
+    localStorage.setItem('jjfw.session.v1', JSON.stringify({ role: role, userId: user || null, at: new Date().toISOString() }));
+    localStorage.removeItem('jjfw.db.v3');
+  } catch (e) { document.title = 'STORAGE_FAIL: ' + e.message; }
+  location.replace('/' + to);
+})();
+</script>
+</body></html>

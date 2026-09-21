@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Admin | J&amp;J Flooring World</title>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/layout.css">
+<link rel="icon" type="image/webp" href="assets/jj-mascot.webp">
+<meta name="theme-color" content="#FFFFFF">
+</head>
+<body>
+<div class="app">
+
+  <div class="shell">
+    <header class="appbar" id="appbar"></header>
+
+    <div class="subnav">
+      <div class="subnav-inner">
+        <nav class="tabs" id="nav" role="tablist" aria-label="Admin navigation">
+          <span class="tabs-title">Workspace</span>
+          <button data-view="overview" role="tab">Dashboard</button>
+          <button data-view="pipeline" role="tab">Sales Pipeline</button>
+          <button data-view="jobs" role="tab">Jobs &amp; Invoices</button>
+          <button data-view="products" role="tab">Products</button>
+          <button data-view="commissions" role="tab">Commission</button>
+          <button data-view="earnings" role="tab">Earnings</button>
+          <button data-view="team" role="tab">Team</button>
+          <button data-view="sync" role="tab">Sync &amp; Settings</button>
+        </nav>
+        <select class="tab-select" aria-label="Go to"></select>
+      </div>
+    </div>
+
+    <main class="main" id="main">
+
+    <section class="view" data-view="overview">
+      <div class="view-head">
+        <h1>Company dashboard</h1>
+        <div class="sub">Revenue, cost and margin across every job on the books.</div>
+      </div>
+      <div data-mount="overview"></div>
+    </section>
+
+    <section class="view" data-view="pipeline">
+      <div class="view-head">
+        <h1>Sales pipeline</h1>
+        <div class="sub">Every lead, every rep. Open a card to change stage or review estimates.</div>
+      </div>
+      <div data-mount="pipeline"></div>
+    </section>
+
+    <section class="view" data-view="jobs">
+      <div class="view-head">
+        <h1>Jobs and invoices</h1>
+        <div class="sub">Schedule installers, track stage, record payments.</div>
+      </div>
+      <div data-mount="jobs"></div>
+    </section>
+
+    <section class="view" data-view="products">
+      <div class="view-head">
+        <h1>Products</h1>
+        <div class="sub">Mirrors the product lines carried on <a href="https://jjflooringworld.com/products" target="_blank" rel="noopener">jjflooringworld.com</a>. Margin is always computed from cost and price, never stored as an editable field.</div>
+      </div>
+      <div data-mount="products"></div>
+    </section>
+
+    <section class="view" data-view="commissions">
+      <div class="view-head">
+        <h1>Commission</h1>
+        <div class="sub">How commission is worked out, and who gets what. A line pays the product's own rate when it has one, otherwise the rep's rate, otherwise the company default.</div>
+      </div>
+      <div data-mount="commissions"></div>
+    </section>
+
+    <section class="view" data-view="earnings">
+      <div class="view-head">
+        <h1>Earnings</h1>
+        <div class="sub">What every product actually earned on top of its cost, and what was paid out in commission to get it.</div>
+      </div>
+      <div data-mount="earnings"></div>
+    </section>
+
+    <section class="view" data-view="team">
+      <div class="view-head">
+        <h1>Team</h1>
+        <div class="sub">Mock users and commission rates.</div>
+      </div>
+      <div data-mount="team"></div>
+    </section>
+
+    <section class="view" data-view="sync">
+      <div class="view-head">
+        <h1>Sync and settings</h1>
+        <div class="sub">The GoHighLevel integration surface, stubbed for this prototype.</div>
+      </div>
+      <div data-mount="sync"></div>
+    </section>
+
+    </main>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/ghlSync.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/pipeline.js"></script>
+<script src="js/invoice.js"></script>
+<script src="js/estimator.js"></script>
+<script src="js/dashboard.js"></script>
+<script>
+(function () {
+  'use strict';
+  if (!Auth.require('Admin')) return;
+  Auth.mountHeader(document.getElementById('appbar'));
+  UI.demoBanner(document.getElementById('main'));
+  Dashboard.renderAll();
+  UI.wireTabs('#nav');
+})();
+</script>
+</body>
+</html>

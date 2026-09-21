@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>J&amp;J Flooring World</title>
+<meta name="description" content="Estimator, invoicing and job dashboard for J&J Flooring World.">
+<meta name="theme-color" content="#001B3A">
+<link rel="icon" type="image/webp" href="assets/jj-mascot.webp">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/layout.css">
+</head>
+<body class="login-page">
+
+  <main class="login-main">
+    <div class="login-card">
+      <div class="login-brand">
+        <a href="index.html" aria-label="J&amp;J Flooring World">
+          <img src="assets/jj-logo.png" alt="J&amp;J Flooring World">
+        </a>
+      </div>
+      <div class="login-tag">Love Where You Walk</div>
+
+      <div class="login-eyebrow t-eyebrow">Team sign in</div>
+      <h1>Choose your workspace</h1>
+      <p class="lede">
+        Pick a role to enter. Every role reads the same leads, estimates and jobs from
+        its own point of view, so you can walk one customer from intake all the way
+        to a paid invoice.
+      </p>
+
+      <div class="role-grid" id="roleGrid"></div>
+
+      <ul class="login-points">
+        <li><span class="tick">✓</span><span>Built to be embedded inside GoHighLevel as a custom page.</span></li>
+        <li><span class="tick">✓</span><span>Each role sees only its own slice of the business.</span></li>
+        <li><span class="tick">✓</span><span>Prototype data stays in this browser. Nothing is uploaded.</span></li>
+      </ul>
+
+      <div class="login-foot">
+        <span id="storeNote"></span>
+        <span class="grow"></span>
+        <button class="btn btn-sm btn-ghost" id="resetBtn">Reset demo data</button>
+      </div>
+    </div>
+  </main>
+
+<script src="js/data.js"></script>
+<script src="js/ghlSync.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/auth.js"></script>
+<script>
+(function () {
+  'use strict';
+  var el = UI.el;
+
+  DB.load(); // seeds on first visit
+
+  function icon(path) {
+    var ns = 'http://www.w3.org/2000/svg';
+    var svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('width', '22'); svg.setAttribute('height', '22');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-width', '1.7');
+    svg.setAttribute('stroke-linecap', 'round');
+    svg.setAttribute('stroke-linejoin', 'round');
+    var p = document.createElementNS(ns, 'path');
+    p.setAttribute('d', path);
+    svg.appendChild(p);
+    return svg;
+  }
+
+  var grid = document.getElementById('roleGrid');
+
+  Auth.ROLES.forEach(function (r) {
+    var people = Auth.usersWithRole(r.key);
+    var btn = el('button', {
+      class: 'role-btn',
+      style: '--accent:' + r.accent,
+      onclick: function () {
+        Auth.login(r.key, people[0] && people[0].id);
+        location.href = r.page;
+      }
+    }, [
+      el('span', { class: 'ico' }, [icon(r.icon)]),
+      el('span', {}, [
+        el('span', { class: 'rn', text: r.label || r.key }),
+        el('span', { class: 'rd', text: r.blurb }),
+        el('span', { class: 'who', text: people.length
+            ? 'Signs in as ' + people[0].name + (people.length > 1 ? ' (switch reps from the top bar)' : '')
+            : 'No user seeded' })
+      ])
+    ]);
+    grid.appendChild(btn);
+  });
+
+  document.getElementById('storeNote').textContent = DB.Storage.persistent
+    ? 'Data persists in this browser. Refresh-safe.'
+    : 'This browser blocks storage on local files, so data lives in this tab only.';
+
+  document.getElementById('resetBtn').addEventListener('click', function () {
+    UI.confirm({
+      title: 'Reset demo data',
+      message: 'This clears every lead, estimate, job and invoice you created and reloads the original seed set.',
+      confirmLabel: 'Reset',
+      danger: true,
+      onConfirm: function () {
+        DB.resetDemoData();
+        Auth.logout();
+        UI.toast('Demo data reset to the seeded set.', 'ok');
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>

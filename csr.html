@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CSR | J&amp;J Flooring World</title>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/layout.css">
+<link rel="icon" type="image/webp" href="assets/jj-mascot.webp">
+<meta name="theme-color" content="#FFFFFF">
+</head>
+<body>
+<div class="app">
+
+  <div class="shell">
+    <header class="appbar" id="appbar"></header>
+
+    <div class="subnav">
+      <div class="subnav-inner">
+        <nav class="tabs" id="nav" role="tablist" aria-label="CSR navigation">
+          <span class="tabs-title">Front desk</span>
+          <button data-view="intake" role="tab">Intake Board</button>
+          <button data-view="appointments" role="tab">Appointments</button>
+        </nav>
+        <select class="tab-select" aria-label="Go to"></select>
+      </div>
+    </div>
+
+    <main class="main" id="main">
+
+    <section class="view" data-view="intake">
+      <div class="view-head">
+        <h1>Intake board</h1>
+        <div class="sub">New leads through to booked appointments. Pricing lives with the estimators.</div>
+      </div>
+      <div data-mount="intake"></div>
+    </section>
+
+    <section class="view" data-view="appointments">
+      <div class="view-head">
+        <h1>Booked appointments</h1>
+        <div class="sub">Everything you have scheduled, by date.</div>
+      </div>
+      <div data-mount="appointments"></div>
+    </section>
+
+    </main>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/ghlSync.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/pipeline.js"></script>
+<script>
+/* CSR controller.
+   PERMISSIONS: this file never touches products, estimates, invoices,
+   commission or any money field. There is no price anywhere in the DOM it
+   builds, and the stage select is limited to the three intake stages. */
+(function () {
+  'use strict';
+  var el = UI.el;
+
+  if (!Auth.require('CSR')) return;
+  var me = Auth.currentUser();
+
+  Auth.mountHeader(document.getElementById('appbar'), {
+    extras: [el('button', { class: 'bar-btn', title: 'New lead', onclick: newLeadForm },
+      [el('span', { text: '+' }), el('span', { class: 'lbl', text: 'New lead' })])]
+  });
+  UI.demoBanner(document.getElementById('main'));
+
+  function mount(n) { return document.querySelector('[data-mount="' + n + '"]'); }
+
+  function intakeLeads() {
+    return DB.load().leads.filter(function (l) { return DB.CSR_STAGES.indexOf(l.stage) !== -1; });
+  }
+
+  /* -------------------------------------------------------------- Intake */
+  function renderIntake() {
+    var m = mount('intake'); UI.clear(m);
+    var leads = intakeLeads();
+
+    var counts = DB.CSR_STAGES.map(function (s) {
+      return { s: s, n: leads.filter(function (l) { return l.stage === s; }).length };
+    });
+
+    m.appendChild(el('div', { class: 'stat-strip', style: 'margin-bottom:16px' }, counts.map(function (c) {
+      return el('div', { class: 'stat' }, [
+        el('div', { class: 'stat-label', text: c.s }),
+        el('div', { class: 'stat-value', text: String(c.n) })
+      ]);
+    })));
+
+    if (!leads.length) {
+      m.appendChild(UI.empty('Board is clear', 'Every intake lead has been qualified and handed to a rep.'));
+      return;
+    }
+
+    m.appendChild(Pipeline.leadBoard(leads, { stages: DB.CSR_STAGES, onOpen: openLead }));
+  }
+
+  function openLead(lead) {
+    var rep = DB.user(lead.assignedRepId);
+    var body = el('div', {});
+
+    body.appendChild(el('dl', { class: 'kv' }, [
+      el('dt', { text: 'Phone' }), el('dd', { text: lead.phone }),
+      el('dt', { text: 'Email' }), el('dd', { text: lead.email }),
+      el('dt', { text: 'Address' }), el('dd', { text: lead.address }),
+      el('dt', { text: 'Zip' }), el('dd', { text: lead.zipCode }),
+      el('dt', { text: 'Source' }), el('dd', { text: lead.source }),
+      el('dt', { text: 'Assigned rep' }), el('dd', { text: rep ? rep.name : 'Unassigned' }),
+      el('dt', { text: 'Created' }), el('dd', { text: UI.dt(lead.createdAt) })
+    ]));
+
+    body.appendChild(el('hr', { class: 'divider' }));
+    body.appendChild(el('div', { class: 'label', text: 'Stage' }));
+    body.appendChild(Pipeline.stageSelect(lead.stage, DB.CSR_STAGES, function (v) {
+      DB.setLeadStage(lead.id, v);
+      UI.toast('Moved to ' + v + '.', 'ok');
+      renderAll();
+    }));
+    body.appendChild(el('div', { class: 't-meta', style: 'margin-top:6px',
+      text: 'A CSR can move a lead through intake only. Qualifying and quoting belong to the estimator.' }));
+
+    var dateIn = el('input', { class: 'input', type: 'date', value: UI.toInputDate(lead.appointmentAt) });
+    var timeIn = el('input', { class: 'input', type: 'time',
+      value: lead.appointmentAt ? new Date(lead.appointmentAt).toTimeString().slice(0, 5) : '10:00' });
+
+    body.appendChild(el('hr', { class: 'divider' }));
+    body.appendChild(el('div', { class: 'label', text: 'Schedule an appointment' }));
+    body.appendChild(el('div', { class: 'field-row' }, [
+      el('div', { class: 'field grow', style: 'margin-bottom:0' }, [dateIn]),
+      el('div', { class: 'field', style: 'flex:0 0 130px;margin-bottom:0' }, [timeIn])
+    ]));
+    body.appendChild(el('button', {
+      class: 'btn btn-primary btn-sm', style: 'margin-top:12px', text: 'Book it',
+      onclick: function () {
+        if (!dateIn.value) { UI.toast('Pick a date first.', 'warn'); return; }
+        var d = new Date(dateIn.value + 'T' + (timeIn.value || '10:00') + ':00');
+        DB.setAppointment(lead.id, d.toISOString());
+        UI.toast('Appointment booked for ' + UI.dt(d.toISOString(), true) + '.', 'ok');
+        renderAll();
+      }
+    }));
+
+    var noteBox = el('textarea', { class: 'textarea', placeholder: 'What did they say on the call' });
+    body.appendChild(el('hr', { class: 'divider' }));
+    body.appendChild(el('div', { class: 'label', text: 'Log outreach' }));
+    body.appendChild(noteBox);
+    body.appendChild(el('div', { class: 'row-wrap', style: 'margin-top:8px' }, [
+      el('button', {
+        class: 'btn btn-sm btn-primary', text: 'Save note',
+        onclick: function () {
+          if (!noteBox.value.trim()) { UI.toast('Write something first.', 'warn'); return; }
+          DB.addLeadNote(lead.id, noteBox.value.trim(), me.id);
+          if (lead.stage === 'New Lead') DB.setLeadStage(lead.id, 'Contacted');
+          noteBox.value = '';
+          UI.toast('Outreach logged.', 'ok');
+          renderAll();
+        }
+      }),
+      el('button', {
+        class: 'btn btn-sm', text: 'Log "left voicemail"',
+        onclick: function () {
+          DB.addLeadNote(lead.id, 'Left voicemail.', me.id);
+          if (lead.stage === 'New Lead') DB.setLeadStage(lead.id, 'Contacted');
+          UI.toast('Voicemail logged.');
+          renderAll();
+        }
+      })
+    ]));
+
+    var notes = el('div', { style: 'margin-top:12px' });
+    (lead.notes || []).forEach(function (n) {
+      var by = DB.user(n.by);
+      notes.appendChild(el('div', { class: 'note-row' }, [
+        el('div', { class: 'nr-text', text: n.text }),
+        el('div', { class: 'nr-meta', text: (by ? by.name : 'System') + ', ' + UI.relative(n.at) })
+      ]));
+    });
+    body.appendChild(notes);
+
+    UI.modal({
+      title: lead.name, subtitle: lead.zipCode + ', ' + lead.stage,
+      body: body, wide: true, actions: [{ label: 'Close', tone: 'btn-ghost' }]
+    });
+  }
+
+  /* --------------------------------------------------------- New lead */
+  function newLeadForm() {
+    var f = {};
+    function field(key, label, node) {
+      f[key] = node;
+      return el('label', { class: 'field grow' }, [el('span', { class: 'label', text: label }), node]);
+    }
+    var srcSel = el('select', { class: 'select' });
+    DB.LEAD_SOURCES.forEach(function (s) { srcSel.appendChild(el('option', { value: s, text: s })); });
+    var repSel = el('select', { class: 'select' });
+    DB.load().users.filter(function (u) { return u.role === 'Sales Rep'; }).forEach(function (u) {
+      repSel.appendChild(el('option', { value: u.id, text: u.name }));
+    });
+
+    var body = el('div', {}, [
+      field('name', 'Customer name', el('input', { class: 'input' })),
+      el('div', { class: 'field-row' }, [
+        field('phone', 'Phone', el('input', { class: 'input', type: 'tel' })),
+        field('email', 'Email', el('input', { class: 'input', type: 'email' }))
+      ]),
+      field('address', 'Address', el('input', { class: 'input' })),
+      el('div', { class: 'field-row' }, [
+        field('zip', 'Zip code', el('input', { class: 'input', inputmode: 'numeric' })),
+        field('source', 'Source', srcSel),
+        field('rep', 'Assign to', repSel)
+      ]),
+      field('note', 'First note', el('textarea', { class: 'textarea', placeholder: 'What are they asking for' }))
+    ]);
+
+    UI.modal({
+      title: 'New lead', subtitle: 'Goes straight into the New Lead column',
+      body: body,
+      actions: [
+        { label: 'Cancel', tone: 'btn-ghost' },
+        {
+          label: 'Create lead', tone: 'btn-primary', keep: true,
+          onClick: function (close) {
+            if (!f.name.value.trim()) { UI.toast('Name is required.', 'warn'); return false; }
+            DB.addLead({
+              name: f.name.value.trim(), phone: f.phone.value.trim(), email: f.email.value.trim(),
+              address: f.address.value.trim(), zipCode: f.zip.value.trim(),
+              source: srcSel.value, assignedRepId: repSel.value,
+              note: f.note.value.trim(), by: me.id
+            });
+            UI.toast('Lead created.', 'ok');
+            close();
+            renderAll();
+          }
+        }
+      ]
+    });
+  }
+
+  /* -------------------------------------------------------- Appointments */
+  function renderAppointments() {
+    var m = mount('appointments'); UI.clear(m);
+    var booked = DB.load().leads
+      .filter(function (l) { return l.appointmentAt; })
+      .sort(function (a, b) { return new Date(a.appointmentAt) - new Date(b.appointmentAt); });
+
+    if (!booked.length) {
+      m.appendChild(UI.empty('Nothing booked', 'Open a lead on the intake board and schedule a measure.'));
+      return;
+    }
+
+    var panel = el('div', { class: 'panel' }, [
+      el('div', { class: 'panel-head' }, [
+        el('h3', { text: 'Schedule' }),
+        el('span', { class: 't-meta', text: booked.length + ' appointments' })
+      ])
+    ]);
+    var body = el('div', { class: 'panel-body tight' });
+    booked.forEach(function (l) {
+      var rep = DB.user(l.assignedRepId);
+      body.appendChild(el('div', { class: 'list-row' }, [
+        el('div', { class: 'lr-main' }, [
+          el('div', { class: 'lr-title', text: l.name }),
+          el('div', { class: 'lr-meta', text: l.address + ', ' + (rep ? rep.name : 'Unassigned') })
+        ]),
+        el('div', { class: 'lr-right' }, [
+          el('div', { class: 'lr-title', text: UI.dayLabel(l.appointmentAt) }),
+          el('div', { class: 'lr-meta', text: new Date(l.appointmentAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) })
+        ])
+      ]));
+    });
+    panel.appendChild(body);
+    m.appendChild(panel);
+  }
+
+  function renderAll() { renderIntake(); renderAppointments(); }
+
+  renderAll();
+  UI.wireTabs('#nav');
+})();
+</script>
+</body>
+</html>
